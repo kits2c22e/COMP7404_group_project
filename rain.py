@@ -5,15 +5,15 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error
 import pandas as pd
 from keras.models import Sequential
-from keras.layers import GRU, Dropout, Dense
+from keras.layers import GRU, Dense
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 TRAIN_DATA_PATH = './train.csv'
 TEST_DATA_PATH = './test.csv'
 
 # '-1' means read all the gauge readings
-NUM_TRAINING_GAUGE_READINGS = 100
-NUM_TESTING_GAUGE_READINGS = 100
+NUM_TRAINING_GAUGE_READINGS = -1
+NUM_TESTING_GAUGE_READINGS = -1
 MAX_NUM_RADAR_READINGS_PER_HOUR = 30
 # the dimension of the data (22 columns from the file, plus one make-up column)
 X_DIM = 23
@@ -105,7 +105,7 @@ def load_rain_data(path):
       
 def main():
   # load the training data
-  X, y = load_rain_data('../input/train.csv')
+  X, y = load_rain_data('./train.csv')
   print(f'DEBUG X: {X.shape}')
   print(f'DEBUG y: {y.shape}')
   
@@ -117,7 +117,7 @@ def main():
   model.compile(loss='mean_absolute_error', optimizer='rmsprop')
   
   # train the model
-  kf = KFold(n_splits=2)
+  kf = KFold(n_splits=50)
   for i, (train_index, test_index) in enumerate(kf.split(X)):
     X_train, y_train = X[train_index], y[train_index]
     X_test, y_test = X[test_index], y[test_index]
@@ -129,12 +129,12 @@ def main():
               callbacks=[check_pointer, early_stopper])
 
   # evaluate the model
-  X_test, _ = load_rain_data('../input/test.csv')
+  X_test, _ = load_rain_data('./test.csv')
   print(f'DEBUG X_test: {X_test.shape}')  
   y_pred = model.predict(X_test, batch_size=256, verbose=1)
 
   # read in the y_true
-  df = pd.read_csv('../input/sample_solution.csv', index_col=0)
+  df = pd.read_csv('./sample_solution.csv', index_col=0)
   y_true = df['Expected'].values[:y_pred.shape[0]]
   mse = mean_squared_error(y_true, y_pred)
   print(f'mse: {mse}')
